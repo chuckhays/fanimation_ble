@@ -45,13 +45,20 @@ class FanimationBleDevice:
         if self._update_callback:
             self._update_callback()
 
-    async def _write_gatt_char(self, uuid: str, data: bytearray):
-        """Write a value to a BLE characteristic."""
+    def _compute_checksum(self, payload: bytearray) -> int:
+        """Compute the checksum for a command payload."""
+        return sum(payload) & 0xFF
+
+    async def _write_gatt_char(self, uuid: str, payload: bytearray):
+        """Write a payload to a BLE characteristic after appending a checksum."""
+        checksum = self._compute_checksum(payload)
+        full_command = payload + bytearray([checksum])
+        _LOGGER.debug("Sending command with checksum: %s", full_command.hex())
         if not self._client or not self._client.is_connected:
             _LOGGER.warning("Attempted to write when not connected.")
             return
         try:
-            await self._client.write_gatt_char(uuid, data, response=True)
+            await self._client.write_gatt_char(uuid, full_command, response=True)
         except BleakError as e:
             _LOGGER.error("Error writing to characteristic %s: %s", uuid, e)
 
@@ -82,14 +89,12 @@ class FanimationBleDevice:
 
     async def set_fan_speed(self, percentage: int):
         """Set the fan speed."""
-        # --- PLACEHOLDER ---
-        # Example: Command byte 0x01 for fan, followed by speed
-        value_to_write = bytearray([0x01, percentage])
-        await self._write_gatt_char(COMMAND_WRITE_UUID, value_to_write)
+        # The payload does not include the checksum, which is added by _write_gatt_char
+        payload = bytearray([0x01, percentage])
+        await self._write_gatt_char(COMMAND_WRITE_UUID, payload)
 
     async def set_light_brightness(self, brightness: int):
         """Set the light brightness."""
-        # --- PLACEHOLDER ---
-        # Example: Command byte 0x02 for light, followed by brightness (0-255)
-        value_to_write = bytearray([0x02, brightness])
-        await self._write_gatt_char(COMMAND_WRITE_UUID, value_to_write)
+        # The payload does not include the checksum, which is added by _write_gatt_char
+        payload = bytearray([0x02, brightness])
+        await self._write_gatt_char(COMMAND_WRITE_UUID, payload)
