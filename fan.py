@@ -26,7 +26,12 @@ async def async_setup_entry(
 class FanimationBleFanEntity(FanimationBleEntity, FanEntity):
     """Representation of a Fanimation BLE fan."""
 
-    _attr_supported_features = FanEntityFeature.SET_SPEED
+    _attr_supported_features = (
+        FanEntityFeature.SET_SPEED
+        | FanEntityFeature.DIRECTION
+        | FanEntityFeature.TURN_ON
+        | FanEntityFeature.TURN_OFF
+    )
     _attr_speed_count = 3  # Example: 3 speeds (low, medium, high)
 
     def __init__(self, device: FanimationBleDevice) -> None:
@@ -43,13 +48,23 @@ class FanimationBleFanEntity(FanimationBleEntity, FanEntity):
         """Return the current speed percentage."""
         return self._device.percentage
 
+    @property
+    def current_direction(self) -> str | None:
+        """Return the current direction of the fan."""
+        return "reverse" if self._device.direction == 1 else "forward"
+    
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan."""
         await self._device.set_fan_speed(percentage)
 
+    async def async_set_direction(self, direction: str) -> None:
+        """Set the direction of the fan."""
+        direction_val = 1 if direction == "reverse" else 0
+        await self._device.set_direction(direction_val)
+
     async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
         """Turn the fan on."""
-        await self.async_set_percentage(percentage or 50) # Default to 50% speed
+        await self.async_set_percentage(percentage or 50)  # Default to 50% speed
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the fan off."""
