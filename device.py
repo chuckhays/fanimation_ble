@@ -34,23 +34,23 @@ class FanimationBleDevice:
         _LOGGER.debug("Received notification: %s", data.hex())
 
         # Verify checksum of received data
-        if len(data) != 9 or (sum(data[:-1]) & 0xFF) != data[8]:
+        if len(data) != 10 or (sum(data[:-1]) & 0xFF) != data[9]:
             _LOGGER.warning(
                 "Received notification with invalid checksum or length: %s", data.hex()
             )
             return
         
-        # --- PLACEHOLDER ---
         # Assuming the notification format matches the command structure
         # Byte 0 should be 0x53, Byte 1 should be command type
         self.percentage = data[2]
         self.is_on = self.percentage > 0
         self.direction = data[3]
-        # Byte 4 is constant 0
+        # Byte 4 (index 4) is constant 0
         self.brightness = data[5]
         self.light_is_on = self.brightness > 0
         self.timer_minutes = data[6]
-        # Byte 7 is constant 0
+        # Byte 7 (index 7) is constant 0
+        # Byte 8 (index 8) is likely constant 0
 
         if self._update_callback:
             self._update_callback()
@@ -60,19 +60,20 @@ class FanimationBleDevice:
         return sum(payload) & 0xFF
 
     def _create_command_packet(self, command_type: int) -> bytearray:
-        """Creates a 9-byte command packet."""
-        payload = bytearray(8)  # Create an 8-byte array, checksum will be 9th
+        """Creates a 10-byte command packet."""
+        payload = bytearray(9)  # Create a 9-byte array, checksum will be 10th
         payload[0] = 0x53
         payload[1] = command_type
 
         if command_type == 0x31:  # Write command
             payload[2] = self.percentage
             payload[3] = self.direction
-            payload[4] = 0
+            payload[4] = 0  # Constant
             payload[5] = self.brightness
             payload[6] = self.timer_minutes
-            payload[7] = 0
-        # For a read command (0x30), bytes 2-7 are already initialized to 0
+            payload[7] = 0  # Constant
+            payload[8] = 0  # Constant
+        # For a read command (0x30), bytes 2-8 are already initialized to 0
 
         checksum = sum(payload) & 0xFF
         return payload + bytearray([checksum])
