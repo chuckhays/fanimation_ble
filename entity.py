@@ -19,3 +19,13 @@ class FanimationBleEntity(Entity):
             manufacturer="Fanimation",
             model="Smart Fan",
         )
+
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to hass."""
+        await super().async_added_to_hass()
+        self._device.register_callback(self.async_write_ha_state)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """When entity will be removed from hass."""
+        await super().async_will_remove_from_hass()
+        self._device.register_callback(None)

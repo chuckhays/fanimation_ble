@@ -41,11 +41,7 @@ class FanimationBleLightEntity(FanimationBleEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         await self._device.set_light_power(True)
-        self._device.light_is_on = True
-        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
         await self._device.set_light_power(False)
-        self._device.light_is_on = False
-        self.async_write_ha_state()

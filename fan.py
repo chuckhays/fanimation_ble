@@ -46,13 +46,10 @@ class FanimationBleFanEntity(FanimationBleEntity, FanEntity):
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan."""
         await self._device.set_fan_speed(percentage)
-        self._device.percentage = percentage
-        self._device.is_on = percentage > 0
-        self.async_write_ha_state()
 
     async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
         """Turn the fan on."""
-        await self.async_set_percentage(percentage or 50)  # Default to 50% speed
+        await self.async_set_percentage(percentage or 50) # Default to 50% speed
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the fan off."""
