@@ -20,6 +20,7 @@ class FanimationBleDevice:
         self.is_on = False
         self.light_is_on = False
         self.percentage = 0
+        self.brightness: int = 0
         self._update_callback = None
 
     def register_callback(self, callback) -> None:
@@ -37,7 +38,9 @@ class FanimationBleDevice:
             self.percentage = data[1]
             self.is_on = self.percentage > 0
         elif data[0] == 0x02:  # Light status update
-            self.light_is_on = data[1] == 0x01
+            # Assuming the second byte now represents brightness (0-255)
+            self.brightness = data[1]
+            self.light_is_on = self.brightness > 0
 
         if self._update_callback:
             self._update_callback()
@@ -84,9 +87,9 @@ class FanimationBleDevice:
         value_to_write = bytearray([0x01, percentage])
         await self._write_gatt_char(COMMAND_WRITE_UUID, value_to_write)
 
-    async def set_light_power(self, is_on: bool):
-        """Turn the light on or off."""
+    async def set_light_brightness(self, brightness: int):
+        """Set the light brightness."""
         # --- PLACEHOLDER ---
-        # Example: Command byte 0x02 for light, followed by state
-        value_to_write = bytearray([0x02, 0x01 if is_on else 0x00])
+        # Example: Command byte 0x02 for light, followed by brightness (0-255)
+        value_to_write = bytearray([0x02, brightness])
         await self._write_gatt_char(COMMAND_WRITE_UUID, value_to_write)
