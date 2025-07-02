@@ -1,16 +1,23 @@
 """Fan platform for Fanimation BLE."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util.percentage import (
+    int_states_in_range,
+    percentage_to_ranged_value,
+    ranged_value_to_percentage,
+)
 
 from .const import DOMAIN
 from .device import FanimationBleDevice
 from .entity import FanimationBleEntity
+
+SPEED_RANGE = (1, 31)  # The fan uses a 1-31 speed range
 
 
 async def async_setup_entry(
@@ -32,7 +39,6 @@ class FanimationBleFanEntity(FanimationBleEntity, FanEntity):
         | FanEntityFeature.TURN_ON
         | FanEntityFeature.TURN_OFF
     )
-    _attr_speed_count = 3  # Example: 3 speeds (low, medium, high)
 
     def __init__(self, device: FanimationBleDevice) -> None:
         """Initialize the fan entity."""
@@ -44,18 +50,29 @@ class FanimationBleFanEntity(FanimationBleEntity, FanEntity):
         return self._device.is_on
 
     @property
-    def percentage(self) -> int | None:
+    def percentage(self) -> Optional[int]:
         """Return the current speed percentage."""
-        return self._device.percentage
+        if self._device.percentage is None or self._device.percentage == 0:
+            return 0
+        return ranged_value_to_percentage(SPEED_RANGE, self._device.percentage)
+
+    @property
+    def speed_count(self) -> int:
+        """Return the number of speeds the fan supports."""
+        return int_states_in_range(SPEED_RANGE)
 
     @property
     def current_direction(self) -> str | None:
         """Return the current direction of the fan."""
         return "reverse" if self._device.direction == 1 else "forward"
-    
+
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan."""
-        await self._device.set_fan_speed(percentage)
+        if percentage == 0:
+            speed = 0
+        else:
+            speed = round(percentage_to_ranged_value(SPEED_RANGE, percentage))
+        await self._device.set_fan_speed(int(speed))
 
     async def async_set_direction(self, direction: str) -> None:
         """Set the direction of the fan."""
